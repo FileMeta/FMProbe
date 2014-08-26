@@ -1,0 +1,21 @@
+﻿FMProbe Feature Backlog
+* MP3/ID3 Files
+	* Dump all text tags
+	* Support Unicode text tags - experiment to see how Microsoft encodes them, then support the same method.
+	* Dump all other ID3 tags (defined in the ID3v2 Doc)
+	* Report on padding
+	* Dump MP3 information (from frame header)
+* JPEG/EXIF Files
+* MPEG4 Files
+* PDF Files
+* MS Office Files (docx, xlsx, etc.)
+* 
+
+
+
+
+Notes:
+* WPF uses the Windows Imaging Component (WIC) for image codecs and metadata.
+* Windows Shell IPropertyStore is the general purpose metadata API. 
+    * Media Foundation includes support for Windows Shell IPropertyStore beginning with Windows 7.
+	* See: http://msdn.microsoft.com/en-us/library/windows/desktop/ff384859(v=vs.85).aspx

@@ -41,10 +41,16 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ExifProbe.cs" />
     <Compile Include="FileType.cs" />
+    <Compile Include="MidiProbe.cs" />
     <Compile Include="Mp3Probe.cs" />
+    <Compile Include="Mp4Probe.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="SubStream.cs" />
+    <Compile Include="WinShell.cs" />
+    <Compile Include="WpsProbe.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />

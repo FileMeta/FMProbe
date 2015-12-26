@@ -15,11 +15,13 @@ namespace WinShell
     // Wrapper Class for IPropertyStore
     class PropertyStore : IDisposable
     {
-        public static PropertyStore Open(string filename)
+        public static PropertyStore Open(string filename, bool writeAccess = false)
         {
             NativeMethods.IPropertyStore store;
             Guid iPropertyStoreGuid = typeof(NativeMethods.IPropertyStore).GUID;
-            NativeMethods.SHGetPropertyStoreFromParsingName(filename, (IntPtr)0, GETPROPERTYSTOREFLAGS.GPS_BESTEFFORT, ref iPropertyStoreGuid, out store);
+            NativeMethods.SHGetPropertyStoreFromParsingName(filename, (IntPtr)0,
+                writeAccess ? GETPROPERTYSTOREFLAGS.GPS_READWRITE : GETPROPERTYSTOREFLAGS.GPS_BESTEFFORT,
+                ref iPropertyStoreGuid, out store);
             return new PropertyStore(store);
         }
 
@@ -75,7 +77,7 @@ namespace WinShell
                     }
                     catch
                     {
-                        Console.WriteLine("   VariantClear failure");
+                        Debug.Fail("VariantClear failure");
                     }
                     Marshal.FreeCoTaskMem(pv);
                     pv = IntPtr.Zero;
@@ -103,6 +105,11 @@ namespace WinShell
             }
         }
 
+        public void Commit()
+        {
+            m_IPropertyStore.Commit();
+        }
+
         public void Dispose()
         {
             Dispose(true);
@@ -119,11 +126,15 @@ namespace WinShell
             {
                 if (!disposing)
                 {
-                    Debug.Fail("Failed to dispose IPropertyStore");
+                    Debug.Fail("Failed to dispose PropertyStore");
                 }
 
                 Marshal.FinalReleaseComObject(m_IPropertyStore);
                 m_IPropertyStore = null;
+            }
+            if (disposing)
+            {
+                GC.SuppressFinalize(this);
             }
         }
 
@@ -209,6 +220,10 @@ namespace WinShell
                 Marshal.FinalReleaseComObject(m_IPropertySystem);
                 m_IPropertySystem = null;
             }
+            if (disposing)
+            {
+                GC.SuppressFinalize(this);
+            }
         }
     }
 
@@ -290,11 +305,15 @@ namespace WinShell
             {
                 if (!disposing)
                 {
-                    Debug.Fail("Failed to dispose PropertySystem");
+                    Debug.Fail("Failed to dispose PropertyDescription");
                 }
 
                 Marshal.FinalReleaseComObject(m_IPropertyDescription);
                 m_IPropertyDescription = null;
+            }
+            if (disposing)
+            {
+                GC.SuppressFinalize(this);
             }
         }
     }
@@ -688,10 +707,10 @@ namespace WinShell
                 [Out] out IPropertyStore propertyStore);
 
         [DllImport(@"ole32.dll", SetLastError = true, CallingConvention = CallingConvention.StdCall, PreserveSig=false)]
-        public static extern void InitPropVariantFromString([In][MarshalAs(UnmanagedType.LPWStr)] string pszPath, [Out] out IntPtr pv);
+        public static extern void PropVariantInit([In] IntPtr pvarg);
 
         [DllImport(@"ole32.dll", SetLastError = true, CallingConvention = CallingConvention.StdCall, PreserveSig=false)]
-        public static extern void PropVariantClear(IntPtr pvarg);
+        public static extern void PropVariantClear([In] IntPtr pvarg);
 
         [DllImport("propsys.dll", SetLastError=true, CallingConvention = CallingConvention.StdCall, PreserveSig=false)]
         public static extern void PSGetPropertySystem([In] ref Guid iIdPropertySystem, [Out] out IPropertySystem propertySystem);
@@ -700,18 +719,38 @@ namespace WinShell
         // The resulting variant must be cleared using PropVariantClear and freed using Marshal.FreeCoTaskMem
         public static IntPtr PropVariantFromString(string value)
         {
+            IntPtr pstr = IntPtr.Zero;
             IntPtr pv = IntPtr.Zero;
             try
             {
+                // In managed code, new automatically zeros the contents.
+                PropVariant.PROPVARIANT propvariant = new PropVariant.PROPVARIANT();
+
+                // Allocate the string
+                pstr = Marshal.StringToCoTaskMemUni(value);
+
+                // Allocate the PropVariant
                 pv = Marshal.AllocCoTaskMem(16);
-                InitPropVariantFromString(value, out pv);
+
+                // Transfer ownership of the string
+                propvariant.vt = 31; // VT_LPWSTR - not documented but this is to be allocated using CoTaskMemAlloc.
+                propvariant.dataIntPtr = pstr;
+                Marshal.StructureToPtr(propvariant, pv, false);
+                pstr = IntPtr.Zero;
+
+                // Transfer ownership to the result
                 IntPtr result = pv;
                 pv = IntPtr.Zero;
                 return result;
             }
             finally
             {
-                if (pv != (IntPtr)0)
+                if (pstr != IntPtr.Zero)
+                {
+                    Marshal.FreeCoTaskMem(pstr);
+                    pstr = IntPtr.Zero;
+                }
+                if (pv != IntPtr.Zero)
                 {
                     try
                     {
@@ -719,7 +758,7 @@ namespace WinShell
                     }
                     catch
                     {
-                        Console.WriteLine("   VariantClear failure");
+                        Debug.Fail("VariantClear failure");
                     }
                     Marshal.FreeCoTaskMem(pv);
                     pv = IntPtr.Zero;
@@ -757,7 +796,7 @@ namespace WinShell
                         }
                         catch
                         {
-                            Console.WriteLine("   VariantClear failure");
+                            Debug.Fail("VariantClear failure");
                         }
                         Marshal.FreeCoTaskMem(pv);
                         pv = IntPtr.Zero;

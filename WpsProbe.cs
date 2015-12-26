@@ -9,9 +9,7 @@ namespace FMProbe
 {
 
     /// <summary>
-    /// Probes ID3v2.3 files. Today, that version is used almost
-    /// exclusively. Future enhancements may include other versions
-    /// of ID3.
+    /// Probes files for metadata using the Windows Property System (WPS)
     /// </summary>
     class WpsProbe
     {
@@ -40,7 +38,7 @@ namespace FMProbe
                         {
                             using (WinShell.PropertyDescription desc = propsys.GetPropertyDescription(key))
                             {
-                                name = desc.CanonicalName;
+                                name = string.Concat(desc.CanonicalName, " ", desc.DisplayName);
                             }
                         }
                         catch

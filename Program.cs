@@ -18,6 +18,8 @@ namespace FMProbe
     Filename may include wildcards.";
         static readonly char[] sWildcards = new char[] { '*', '?' };
 
+        static bool testMode = false;
+
         static int mVerbosity = 0;
         static public int Verbosity
         {
@@ -84,7 +86,12 @@ namespace FMProbe
         {
             output.WriteLine("------------------------------------");
             output.WriteLine("File: {0}", filename);
-            if (useWps)
+            if (testMode)
+            {
+                TestProbe probe = new TestProbe(filename, output);
+                probe.Probe();
+            }
+            else if (useWps)
             {
                 WpsProbe probe = new WpsProbe(filename, output);
                 probe.Probe();
@@ -112,6 +119,10 @@ namespace FMProbe
                         else if (arg.Equals("-wps", StringComparison.Ordinal)) // Use Windows Property System
                         {
                             useWps = true;
+                        }
+                        else if (arg.Equals("-test", StringComparison.Ordinal))
+                        {
+                            testMode = true;
                         }
                         else
                         {
